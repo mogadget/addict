@@ -9,7 +9,7 @@ defmodule Addict.ManagerInteractorTest do
 
   test "validates required fields on create" do
     user_params = %{}
-    assert Interactor.create(user_params, RepoStub, MailerStub) == {:error, "Required parameters are missing"}
+    assert catch_throw(Interactor.create(user_params, RepoStub, MailerStub)) == "Required parameters are missing"
   end
 
   test "validates for nil params" do

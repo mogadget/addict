@@ -33,7 +33,7 @@ defmodule Addict.BaseManagerInteractor do
               |> create_username(user_params, repo)
               |> send_welcome_email(mailer)
           :error ->
-            {result, returned}
+            throw returned
         end
 
       end
