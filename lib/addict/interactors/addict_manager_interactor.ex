@@ -24,11 +24,18 @@ defmodule Addict.BaseManagerInteractor do
         Required fields in `user_params` `Dict` are: `email`, `password`, `username`.
       """
       def create(user_params, repo \\ Addict.Repository, mailer \\ Addict.EmailGateway, password_interactor \\ Addict.PasswordInteractor) do
-        validate_params(user_params)
-        |> (fn (params) -> params["password"] end).()
-        |> password_interactor.generate_hash
-        |> create_username(user_params, repo)
-        |> send_welcome_email(mailer)
+        {result, returned} = validate_params(user_params)
+        case result do
+          :ok ->
+            returned
+              |> (fn (params) -> params["password"] end).()
+              |> password_interactor.generate_hash
+              |> create_username(user_params, repo)
+              |> send_welcome_email(mailer)
+          :error ->
+            {result, returned}
+        end
+
       end
 
       @doc """
@@ -104,13 +111,13 @@ defmodule Addict.BaseManagerInteractor do
         throw "Unable to create user, invalid hash: nil"
       end
 
-      defp validate_params(user_params) do
-        case is_nil(user_params["email"])
-             or is_nil(user_params["password"])
-             or is_nil(user_params["username"]) do
-               false -> user_params
-               true -> throw "Unable to create user, invalid hash. Required params: email, password, username"
-             end
+      # With default fields to validate or with option to override
+      defp validate_params(user_params, required \\ ["email","password","username"]) do
+        empty = Enum.count(required, fn(key) -> is_nil(user_params[key]) end)
+        case empty do
+          0 -> {:ok, user_params}
+          _ -> {:error, "Required parameters are missing"}
+        end
       end
 
       defp create_username(hash, user_params, repo) do
